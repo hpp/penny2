@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.0.0/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="4e86306289ace4aa0cfec44a05ed2b410d36989d">
+        <dex dex="/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/classes-fdc3d255be2ad61bcb2cb1f2d322c8e9bdadef1f.jar" />
+    </item>
+    <item
+        jar="/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.0.0/libs/internal_impl-22.0.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="b5b92f469d515a13d778900f6d50c03d12f35504">
+        <dex dex="/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/internal_impl-22.0.0-36b86f059a503a164c0c0bd4329769eb58025b7b.jar" />
+    </item>
+    <item
+        jar="/Users/izzy/Library/Android/sdk/extras/android/m2repository/com/android/support/support-annotations/22.0.0/support-annotations-22.0.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="685d0b2c590447e85284ed84712cb363ba04eff8">
+        <dex dex="/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/support-annotations-22.0.0-82e89b935e5e28b9ea54c8a2dfca8ef062a004ef.jar" />
+    </item>
+    <item
+        jar="/Users/izzy/AndroidstudioProjects/Penelope/app/libs/libGoogleAnalyticsServices.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="e887c6c9b31b39a39b0eaba981448b78902ea813">
+        <dex dex="/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/libGoogleAnalyticsServices-0a3c719ca5a95c72142f260c1a190965365c716e.jar" />
+    </item>
+
+</items>

@@ -1,0 +1,5 @@
+/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/classes/debug
+/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/support-annotations-22.0.0-82e89b935e5e28b9ea54c8a2dfca8ef062a004ef.jar
+/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/internal_impl-22.0.0-36b86f059a503a164c0c0bd4329769eb58025b7b.jar
+/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/classes-fdc3d255be2ad61bcb2cb1f2d322c8e9bdadef1f.jar
+/Users/izzy/AndroidstudioProjects/Penelope/app/build/intermediates/pre-dexed/debug/libGoogleAnalyticsServices-0a3c719ca5a95c72142f260c1a190965365c716e.jar

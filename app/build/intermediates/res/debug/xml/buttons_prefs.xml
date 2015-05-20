@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/options">
+<PreferenceCategory
+    android:key="performance_options_category_key"
+    android:title="@string/performance_options_category"
+    android:summary="Turn off unused features to help boost performance"
+    android:visibility="invisible">
+    <CheckBoxPreference
+        android:key="turn_on_visualization_key"
+        android:title="@string/visualization"
+        android:defaultValue="true"/>
+    <CheckBoxPreference
+        android:key="turn_on_accelerometer_key"
+        android:title="@string/accelerometer"
+        android:defaultValue="true"/>
+    <CheckBoxPreference
+        android:key="turn_on_output_audio_key"
+        android:title="@string/output_audio"
+        android:defaultValue="true"/>
+    <CheckBoxPreference
+        android:key="turn_on_video_preview_key"
+        android:title="Doesn't Matter don't want to show"
+        android:defaultValue="true"/>
+    <CheckBoxPreference
+        android:key="switch_camera_key"
+        android:title="Doesn't matter"
+        android:defaultValue="true"/>
+</PreferenceCategory>
+</PreferenceScreen><!-- From: file:/Users/izzy/AndroidstudioProjects/Penelope/app/src/main/res/xml/buttons_prefs.xml -->

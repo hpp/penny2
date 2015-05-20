@@ -1,0 +1,176 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0099cc"
+    tools:context=".PenelopeMainActivity" 
+    >
+
+    <!--
+         The primary full-screen view. This can be replaced with whatever view
+         is needed to present your content, e.g. VideoView, SurfaceView,
+         TextureView, etc.
+    -->
+	
+
+    <FrameLayout
+        android:id="@+id/opengl_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" 
+        android:background="@color/black_overlay"
+        />
+
+    <TextView
+        android:id="@+id/fullscreen_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:keepScreenOn="true"
+        android:text="@string/OnAirFalse"
+        android:textColor="#33b5e5"
+        android:textSize="50sp"
+        android:textStyle="bold" 
+       />
+	
+    <!--
+         This FrameLayout insets its children based on system windows using
+         android:fitsSystemWindows.
+    -->
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true" >
+        
+<!--style="?buttonBarStyle"-->
+
+        <LinearLayout
+            android:id="@+id/fullscreen_content_controls"
+            style="?buttonBarStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:background="@color/black_overlay"
+            android:orientation="horizontal"
+            tools:ignore="UselessParent">
+            
+            
+ <!--  style="?buttonBarButtonStyle"-->
+
+            <Button
+                android:id="@+id/dummy_button"
+                style="?buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/OnAirTrue"
+                android:visibility="gone"/>
+            <Button
+                android:id="@+id/record_button"
+                style="?buttonBarButtonStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/record_button"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/onair_controls"
+            style="?buttonBarStyle"
+            android:layout_width="360dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:orientation="horizontal"
+            tools:ignore="UselessParent">
+
+            <ImageButton
+                android:layout_width="46dp"
+                android:layout_height="92dp"
+                android:id="@+id/audioButton"
+                android:layout_gravity="start|center_vertical"
+                android:src="@drawable/audio_off"
+                android:scaleType="fitXY"
+                android:padding="4dp"
+                android:background="#00000000"
+                android:clickable="true"/>
+
+            <ImageButton
+                android:layout_width="92dp"
+                android:layout_height="46dp"
+                android:id="@+id/videoButton"
+                android:src="@drawable/av_audio"
+                android:scaleType="fitCenter"
+                android:layout_gravity="start|center_vertical"
+                android:padding="4dp"
+                android:background="#00000000"
+                android:clickable="true"/>
+            <ImageButton
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:id="@+id/capture_button"
+                android:layout_gravity="start|center_vertical"
+                android:src="@drawable/capture_button"
+                android:scaleType="fitCenter"
+                android:padding="2dp"
+                android:background="#00000000"
+                android:clickable="true" />
+
+            <FrameLayout
+                android:layout_width="120dp"
+                android:layout_height="120dp">
+                <ImageButton
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:id="@+id/rabbitButton"
+                    android:layout_gravity="start|top"
+                    android:src="@drawable/rabbit_hiding"
+                    android:scaleType="fitCenter"
+                    android:padding="4dp"
+                    android:background="#00000000"
+                    android:clickable="true" />
+                <ImageButton
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:id="@+id/pyramidButton"
+                    android:src="@drawable/pyramid_open_96"
+                    android:scaleType="fitCenter"
+                    android:layout_gravity="start|bottom"
+                    android:padding="4dp"
+                    android:background="#00000000"
+                    android:clickable="true" />
+                <ImageButton
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:id="@+id/switchCameraButton"
+                    android:src="@drawable/switch_camera"
+                    android:scaleType="fitCenter"
+                    android:layout_gravity="right|top"
+                    android:padding="4dp"
+                    android:background="#00000000"
+                    android:clickable="true" />
+                <ImageButton
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:id="@+id/particlesButton"
+                    android:src="@drawable/particles_closed_96"
+                    android:scaleType="fitCenter"
+                    android:layout_gravity="right|bottom"
+                    android:padding="4dp"
+                    android:background="#00000000"
+                    android:clickable="true" />
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+    
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" 
+        android:background="@color/black_overlay"
+        android:visibility="gone" 
+       />
+
+</FrameLayout><!-- From: file:/Users/izzy/AndroidstudioProjects/Penelope/app/src/main/res/layout/activity_fullscreen.xml -->
