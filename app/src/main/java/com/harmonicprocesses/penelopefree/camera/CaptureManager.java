@@ -15,6 +15,7 @@ import android.R;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
@@ -41,7 +42,7 @@ public class CaptureManager {
 	
 	public static final boolean audioOn = true /*audio on*/, 
 			videoOn = true,
-			/*useInputSurface = false,*/ useStaticBitmap = true,
+			/*useInputSurface = false,*/  useStaticBitmap = true,
 			useDrawingCache = false,useFrameBuffer = false;
 	/**the audio codec*/ private  MyMediaCodec audioCodec = null;
 	private MyMediaCodec videoCodec = null;
@@ -55,6 +56,8 @@ public class CaptureManager {
 	public HandlerThread captureThread;
 	private Handler videoHandler, audioHandler;
 	private ViewGroup videoSurfaceViewGroup;
+    public volatile boolean pause = false;
+    int orientation = Configuration.ORIENTATION_LANDSCAPE;
 	
 	/**time between frames in milliseconds*/ 
 	public static final long frame_delay = 33L;
@@ -73,10 +76,12 @@ public class CaptureManager {
 	private Surface videoInputSurface = null;
 	private boolean releaseAll = false;
 		
-	public CaptureManager(Context context, 
-			Pcamera pcamera, MyGLSurfaceView glSurfaceView,AudioThru audioThru, SurfaceView camSV){
+	public CaptureManager(Context context, Pcamera pcamera,
+                          MyGLSurfaceView glSurfaceView,
+                          AudioThru audioThru, int orient){
 		mContext = context;
 		mPcamera = pcamera;
+        orientation = orient;
 		mGLView = glSurfaceView;
 		captureThread = new HandlerThread("CaptureManager");
 		captureThread.start();
@@ -107,6 +112,10 @@ public class CaptureManager {
 				videoActive=true;
 				//mGLView.beginCapture();
 				videoInputSurface  = videoCodec.videoCodecInputSurface;
+
+                if (videoInputSurface == null){
+                    Log.e(TAG, "Codec crested null videoCodecInputSurface");
+                }
 			}
 			
 			//mGLView.setOutputSurface(videoCodec.getInputSurface());
@@ -182,7 +191,10 @@ public class CaptureManager {
 			},frame_delay);
 		}
 	}
-	
+
+    /**
+     * Releases audio and video codecs and destroys surface texture.
+     */
 	public void releaseCapture(){
 		if (audioCodec != null){
 			audioCodec.stop();
@@ -216,7 +228,7 @@ public class CaptureManager {
 	
 	public SurfaceTextureManager mStManager = null;
 	private SurfaceTexture mSt;
-	
+
 	
     /**
      * Configures SurfaceTexture for camera preview.  Initializes mStManager, and sets the
@@ -237,11 +249,13 @@ public class CaptureManager {
 						checkVideoEffect(null));
 		        mSt = mStManager.getSurfaceTexture();
                 mGLView.endCapture(mStManager);
+                pause = false;
+                cameraPreviewLoop();
 			} catch (Exception e) {
 				Log.e(TAG,"Fatal Exception post Draw = " + e.getMessage());
 				e.printStackTrace();
 			}
-			cameraPreviewLoop();
+
 			
 			}
 
@@ -252,11 +266,16 @@ public class CaptureManager {
      * Starts the camera preview drawing to surface
      * @param cam the camera currently in use.
      */
-    public void startCameraPreview(final Camera cam){
+    public void startCameraPreview(final Camera cam, final int camId,
+                                   final int rot, final int orient){
+        orientation = orient;
+
         try {
             mGLView.beginCapture();
+            if (mStManager != null) mStManager.updateSurface(camId, rot, orient);
             cam.setPreviewTexture(mSt);
             cam.startPreview();
+
         } catch (IOException e) {
             Log.e(TAG,"Fatal Exception post Draw = " + e.getMessage());
             e.printStackTrace();
@@ -267,27 +286,28 @@ public class CaptureManager {
      * Releases the SurfaceTexture.
      */
 	public void releaseSurfaceTexture() {
-		if (isRecording) {
+		/* no reason to end capture here
+        if (isRecording) {
 			endCapture();
 			releaseAll = true;
 			return;
-		}
+		}//*/
 		mGLView.endCapture(mStManager);
 		mPcamera.stopPreview();
-        //mSt.release();
-		//start(videoSurfaceViewGroup);
+        // The camera has nothing to do with the loop
+        // Maybe remove
         /*
         if (mStManager != null) {
             mStManager.release();
             mStManager = null;
-        }*/
+        }//*/
     }
 	
 	/**
 	 * Post new image on CaptureThread
 	 */
 	void cameraPreviewLoop(){
-		if (mStManager == null) return;
+		if (pause) return;
 		
 		if (videoHandler==null) videoHandler = new Handler(captureThread.getLooper());
 		
@@ -314,9 +334,10 @@ public class CaptureManager {
 			@Override
 			public void run() {
 				//draw once for screen
-				mEGLWrapper.makeCurrent(true, videoInputSurface);
-				//ByteBuffer frame = mStManager.drawImage();
-				drawFrame(true);
+                mEGLWrapper.makeCurrent(true, null);
+                //ByteBuffer frame = mStManager.drawImage();
+
+                drawFrame(true);
 				videoCaptureLoop(null);
 			}
 		});
@@ -415,53 +436,22 @@ public class CaptureManager {
 	public MyEGLWrapper getMyEGLWrapper() {
 		return mEGLWrapper;
 	}
-	
-	private void getDrawingBuffer(ByteBuffer frame) {
-		//Parcel specialDelivery = Parcel.obtain();
-		//videoCodec.videoInputSurface.
-		
-		//mGLView.getView().getDrawingCache().writeToParcel(specialDelivery, 0);
-		Bitmap drawing;
-		if (!useFrameBuffer){
-			if (useDrawingCache ){
-				View mView = mEGLWrapper.getView();
-				if (!mView.isDrawingCacheEnabled())
-					mView.setDrawingCacheEnabled(true);
-				drawing = mView.getDrawingCache();
-				int size = drawing.getByteCount();
-				byte[] drawingArray = new byte[size];
-				ByteBuffer drawingBuffer = ByteBuffer.wrap(drawingArray);
-				drawing.copyPixelsToBuffer(drawingBuffer);
-				//videoCodec.videoInputSurface.writeToParcel(specialDelivery, 0);
-				videoCodec.updateInputSurfaceByteArray(drawingBuffer,size,!isRecording);
-			} else {
-				BitmapFactory.Options opt = new BitmapFactory.Options();
-				opt.inPreferredConfig = Config.ARGB_8888;
-				int bitmapId = mContext.getResources()
-						.getIdentifier("screen", "drawable", mContext.getPackageName());
-				drawing = BitmapFactory.decodeResource(
-						mContext.getResources(), bitmapId, opt);
-				int size = drawing.getByteCount();
-				byte[] drawingArray = new byte[size];
-				ByteBuffer drawingBuffer = ByteBuffer.wrap(drawingArray);
-				drawing.copyPixelsToBuffer(drawingBuffer);
-				Uri path = Uri.parse("android.resource://com.harmonicprocesses.penelopefree/" + bitmapId);
-				
-				videoCodec.updateInputSurfaceByteArray(drawingBuffer,size,!isRecording);
-			} 
 
-		} else {
-			videoCodec.updateInputSurfaceByteArray(frame,frame.capacity(),!isRecording);
-		}
-	}
 	
 	private void drawFrameOnInputSurface() {
+        if (videoCodec==null) return;
 
 		mEGLWrapper.makeCurrent(false, videoInputSurface);
         videoCodec.runQue(false); // clear que before posting should this be on this thread???
-		if (videoStartNs == 0) videoStartNs = mSt.getTimestamp();
+
+
+        long timeStamp = mSt.getTimestamp();
+
+        if (videoStartNs == 0) {
+            videoStartNs = timeStamp;
+        }
 		nextFrame(false, videoFrameCount);
-		mEGLWrapper.setPresentationTime(mSt.getTimestamp()-videoStartNs,!recordingStopped);
+		mEGLWrapper.setPresentationTime(timeStamp-videoStartNs,!recordingStopped);
 		drawFrame(false);
 		//mEGLWrapper.swapBuffers(!recordingStopped);
 		videoHandler.post(new Runnable(){

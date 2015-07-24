@@ -17,7 +17,7 @@ public abstract class MyGLSurfaceView extends GLSurfaceView {
 	public int maxAmpIdx;
 	public float maxAmplitude;
 	public MyGLRenderer mRenderer;
-	protected boolean capturingVideo = false, drawOverlay;
+	protected boolean drawCameraFrame = false, drawOverlay;
 	EGLContext mEGLContext;
     protected SurfaceTextureManager mST;
 
@@ -31,17 +31,22 @@ public abstract class MyGLSurfaceView extends GLSurfaceView {
 
 	public abstract void makeCurrent();
 
+    public abstract void updateParticles(int numberParticles,
+                                         float sizeParticles,
+                                         float opacityParticles);
+
     public void setDrawOverlay(Boolean val) {
         drawOverlay = val;
     }
 
     public void beginCapture(){
-    	capturingVideo = true;
+    	drawCameraFrame = true;
     }
     
     public void endCapture(SurfaceTextureManager st){
-    	capturingVideo = false;
+    	drawCameraFrame = false;
         mST = st;
     }
+
 }
 

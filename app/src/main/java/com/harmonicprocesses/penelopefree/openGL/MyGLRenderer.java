@@ -16,34 +16,16 @@
 
 package com.harmonicprocesses.penelopefree.openGL;    
 import com.harmonicprocesses.penelopefree.*;
-import com.harmonicprocesses.penelopefree.R.drawable;
-import com.harmonicprocesses.penelopefree.R.raw;
 import com.harmonicprocesses.penelopefree.openGL.shapes.DarkParticles;
 import com.harmonicprocesses.penelopefree.openGL.shapes.LightParticles;
 import com.harmonicprocesses.penelopefree.openGL.shapes.NoteBillboard;
 import com.harmonicprocesses.penelopefree.openGL.shapes.OuterCircle;
 import com.harmonicprocesses.penelopefree.openGL.shapes.Particles;
 import com.harmonicprocesses.penelopefree.openGL.shapes.Square;
-import com.harmonicprocesses.penelopefree.openGL.shapes.Triangle;
 import com.harmonicprocesses.penelopefree.openGL.utils.Accelmeter;
-import com.harmonicprocesses.penelopefree.openGL.utils.SoundParticle;
-import com.harmonicprocesses.penelopefree.openGL.utils.SoundParticleHexBins;
-import com.harmonicprocesses.penelopefree.settings.SettingsActivity;
 import com.harmonicprocesses.penelopefree.renderscript.ScriptC_particleFilter;
 import com.harmonicprocesses.penelopefree.renderscript.ScriptField_particle;
-import com.hpp.openGL.MyEGLWrapper;
 import com.hpp.openGL.STextureRender;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.ShortBuffer;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -51,25 +33,15 @@ import javax.microedition.khronos.opengles.GL10;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.LevelListDrawable;
-import android.opengl.EGLContext;
-import android.opengl.GLES20;
+import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
-import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.renderscript.Allocation;
-import android.renderscript.BaseObj;
-import android.renderscript.Element;
-import android.renderscript.Element.DataType;
-import android.renderscript.Matrix3f;
 import android.renderscript.RenderScript;
-import android.renderscript.Script;
 import android.util.Log;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
@@ -78,55 +50,35 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
 	private Context mContext;
 	private int subDivision = 12;
 	private int numSquares = subDivision*4*subDivision;
-	private int numParticles = 6;
 	private float particleDelta = 0.01f; //distance sound travels per iteration on plate
+    private final int maxNumParticles = Particles.vertexMaxCount;
 	
     private static final String TAG = "MyGLRenderer";
-    private Triangle mTriangle;
     private Square mSquare[] = new Square[96];
     private NoteBillboard mBillboard;
     private OuterCircle mOuterCircle;
-    private SoundParticle[] mParticle = new SoundParticle[numParticles];
     private Particles mParticles;
     private LightParticles mLightParticles; 
     private DarkParticles mDarkParticles; 
     
-    private SoundParticleHexBins mParticleBins;
-    private float[] xOffset = new float[numParticles], yOffset = new float[numParticles];
-    private ScriptField_particle[] particleData = new ScriptField_particle[numParticles];
-    private float[] particleVBO = new float[numParticles*3];
+    private float[] particleVBO;
 
     private final float[] mMVPMatrix = new float[16];
     private final float[] mProjMatrix = new float[16];
     private final float[] mVMatrix = new float[16];
-    private final float[] mRotationMatrix = new float[16];
-    private final float[] mTranslationMatrix = new float[16];
     private final float[] mTransposeMatrix = new float[16];
     private final float[] mScaleMatrix = new float[16];
     
     private int mTextureID;
     private Paint mLabelPaint;
-    //private LabelMaker mLabels;
-    //private NumericSprite mNumericSprite;
     private int mWidth = 1;
     private int mHeight = 1;
-    
-    /** This will be used to pass in the texture. */
-    private int mTextureUniformHandle;
-     
-    /** This will be used to pass in model texture coordinate information. */
-    private int mTextureCoordinateHandle;
-     
-    /** Size of the texture coordinate data in elements. */
-    private final int mTextureCoordinateDataSize = 2;
-     
-    /** This is a handle to our texture data. */
-    private int mTextureDataHandle;
+
     
     // Declare as volatile because we are updating it from another thread
-    public volatile float mAngle, mNoteAmp;
+    public volatile float particleSize, mNoteAmp, particleOpacity;
     public volatile float[] mAmplitude = new float[numSquares];
-    public volatile int mNote = 1, mMode = 4;
+    public volatile int mNote = 1, mMode = 4, numParticles = 100000;
     
     
     //Declare variables for renderscript
@@ -137,6 +89,8 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
     private SharedPreferences mSharedPrefs;
     public Accelmeter mAccelmeter;
 	private MyGLSurfaceView mGLSurfaceView;
+
+    boolean useTransformFeedback = true;
     
     
     
@@ -149,6 +103,8 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         mLabelPaint.setAntiAlias(true);
         mLabelPaint.setARGB(0xff, 0x00, 0x00, 0x00);
         mAccelmeter = new Accelmeter(context);
+        particleSize = mSharedPrefs.getFloat("size_of_particles_key", 1.0f); //
+        particleOpacity = mSharedPrefs.getFloat("opacity_of_particles_key", 1.0f); // for these variables.
     }
 
     @Override
@@ -158,112 +114,50 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
     		mAccelmeter.start();
     	}
         // Set the background frame color
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        GLES30.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         int[] textures = new int[1];
-        GLES20.glGenTextures(1, textures, 0);
+        GLES30.glGenTextures(1, textures, 0);
 
         mTextureID = textures[0];
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureID);
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mTextureID);
 
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER,
-        		GLES20.GL_NEAREST);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,
-        		GLES20.GL_TEXTURE_MAG_FILTER,
-        		GLES20.GL_LINEAR);
+        GLES30.glTexParameterf(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER,
+        		GLES30.GL_NEAREST);
+        GLES30.glTexParameterf(GLES30.GL_TEXTURE_2D,
+        		GLES30.GL_TEXTURE_MAG_FILTER,
+        		GLES30.GL_LINEAR);
 
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S,
-        		GLES20.GL_CLAMP_TO_EDGE);
-        GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T,
-        		GLES20.GL_CLAMP_TO_EDGE);
+        GLES30.glTexParameterf(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S,
+        		GLES30.GL_CLAMP_TO_EDGE);
+        GLES30.glTexParameterf(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T,
+        		GLES30.GL_CLAMP_TO_EDGE);
 
-        //GLES20.glTexEnvf(GL10.GL_TEXTURE_ENV, GL10.GL_TEXTURE_ENV_MODE,
-        //        GL10.GL_REPLACE);
-        
-        /*
-        if (mLabels != null) {
-            mLabels.shutdown(gl);
-        } else {
-            mLabels = new LabelMaker(true, 256, 256);
-        }
 
-        if (mNumericSprite != null) {
-            mNumericSprite.shutdown(gl);
-        } else {
-            mNumericSprite = new NumericSprite();
-        }
-        mNumericSprite.initialize(gl, mLabelPaint);*/
-        
-        //mTriangle = new Triangle();
-        //mSquare = new Square(0.f);
-        /*for (int i = 0; i<mSquare.length; i++){
-        	mSquare[i] = new Square(0.01f*i-0.48f);
-        }*/
 		float len = 1.0f/subDivision;
 		int dist = 2*subDivision;
-		
-		/* Commented out for square lattice rendering
-		for (int i = 0; i<dist; i++){
-			for (int j = 0; j<dist; j++){
-				mSquare[i*dist+j] = new Square(-1+j*len,-1+i*len,len);
-			}
-		}//*/
 		
 		for (int i = 0; i<96; i++){
 			mSquare[i] = new Square(0.5f-i*0.01f,0.0f,0.01f);
 		}
-        
-        mParticleBins = new SoundParticleHexBins(len, dist);
-        
+
         mBillboard = new NoteBillboard(mContext);
         mOuterCircle = new OuterCircle(mNote, 64); // start at A,    
-        
-        //SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(mContext);
-        int numLightParticles = mSharedPrefs.getInt("vis_number_of_particles_key", 6000);
-        //int numLightParticles = Integer.valueOf(numLightParticlesSting);
 
-        /*
-        mLightParticles = new LightParticles(numLightParticles);
-        mDarkParticles = new DarkParticles(numLightParticles);
-        
-        for (int i = 0; i<numParticles; i++){
-        	mParticle[i] = new SoundParticle(particleDelta, (float) Math.cos(2*Math.PI*i*440/44100));
-        	for (int j = i; j>=0; j--){
-        		mParticle[i].next();
-        	}
+
+        if (!useTransformFeedback) {
+            numParticles = mSharedPrefs.getInt("vis_number_of_particles_key", 6000);
+
+            mLightParticles = new LightParticles(numParticles);
+            mDarkParticles = new DarkParticles(numParticles);
+
+        } else {
+
+            mParticles = new Particles(mContext);
         }
-        
-        float[] particleInits = new float[numParticles*3];
-        for (int i = 0; i<numParticles; i++){
-        	//particleData[i].set(0, 0, mParticle[i].location[0]);
-        	//particleData[i].set(0, 1, mParticle[i].location[1]);
-        	//particleData[i].set(0, 2, mParticle[i].amplitude);
-        	//particleData[i].set(1, 0, mParticle[i].launchAngle);
-        	//particleData[i].set(1, 1, mParticle[i].theta);
-        	//particleData[i].set(1, 2, mParticle[i].distance2edge);
-            
-        	//float x;
-        	//float y;
-        	//float launchAngle;
-        	//float theta;
-        	//float furlong;
-        	//float distance2edge;
-        	//float delta;
-        	//float amplitude;
-        	
-            particleVBO[i*3+0] = mParticle[i].location[0];
-        	particleVBO[i*3+1] = mParticle[i].location[1];
-        	//particleVBO[i*8+2] = mParticle[i].launchAngle; 
-        	//particleVBO[i*8+3] = mParticle[i].theta; 
-        	//particleVBO[i*8+4] = mParticle[i].furlong;
-        	//particleVBO[i*8+5] = mParticle[i].distance2edge;
-        	//particleVBO[i*8+6] = mParticle[i].delta;
-        	particleVBO[i*3+2] = 0; //mParticle[i].amplitude;
-        }        
-        */
+        numParticles = mSharedPrefs.getInt("vis_number_of_particles_key", 6000);
 
 
-       mParticles = new Particles(new float[] {0.0f, 1.0f, 0.0f, 0.1f},particleVBO, particleDelta);
     }
 
 
@@ -275,7 +169,7 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
 
 	public void drawFrame(STextureRender textureRender, SurfaceTexture texture) {
 		// Draw background color
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+        GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT);
 
         // Set the camera position (View matrix)
         Matrix.setLookAtM(mVMatrix, 0, 0f, 0f, -3f, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
@@ -283,8 +177,8 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mMVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
 
-        if (textureRender!=null && mGLSurfaceView.capturingVideo){
-        	textureRender.surafaceChanged(mWidth, mHeight);
+        if (textureRender!=null && mGLSurfaceView.drawCameraFrame){
+        	//textureRender.surafaceChanged(mWidth, mHeight);
         	textureRender.drawFrame(texture,mMVPMatrix,mProjMatrix);
         }
 
@@ -337,24 +231,27 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         //mScript.invoke_getNextPosition();
         double ay = Math.abs(mAccelmeter.linear_acceleration[1]);
         if (ay>1.0){
-        	mMode = 0;
+        	mMode = 1;
         }
         
         // Draw triangle
         mBillboard.draw(mMVPMatrix,mNote);
         mOuterCircle.draw(mMVPMatrix, mNote);
-        /*
-        mLightParticles.draw(mMVPMatrix, mOuterCircle.getRadius(), mMode, mNoteAmp);
-        mDarkParticles.draw(mMVPMatrix, mOuterCircle.getRadius(), mMode, mNoteAmp);
-        */
-
-        //nextParticleVBO();
-        mParticles.draw(mMVPMatrix, particleVBO);
 
 
-        if (textureRender!=null){
-            GLES20.glFlush();
+        if (!useTransformFeedback) {
+            mLightParticles.draw(mMVPMatrix, mOuterCircle.getRadius(), mMode, mNoteAmp);
+            mDarkParticles.draw(mMVPMatrix, mOuterCircle.getRadius(), mMode, mNoteAmp);
+        } else {
+            //nextParticleVBO();
+            mParticles.draw(mMVPMatrix, numParticles, particleSize,
+                    mOuterCircle.getRadius(), mMode, mNoteAmp, particleOpacity);
         }
+
+        //if (textureRender!=null){
+        GLES30.glFlush();
+        //  if (useTransformFeedback) mParticles.onPostFlush(numParticles);
+        //}
 
 	}
 		
@@ -364,7 +261,7 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
     public void onSurfaceChanged(GL10 unused, int width, int height) {
         // Adjust the viewport based on geometry changes,
         // such as screen rotation
-        GLES20.glViewport(0, 0, width, height);
+        GLES30.glViewport(0, 0, width, height);
 
         mRatio = (float) width / (float) height;
         mHeight = height;
@@ -377,16 +274,16 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
     }
 
     public static int loadShader(int shaderType, String source) {
-        int shader = GLES20.glCreateShader(shaderType);
+        int shader = GLES30.glCreateShader(shaderType);
         if (shader != 0) {
-            GLES20.glShaderSource(shader, source);
-            GLES20.glCompileShader(shader);
+            GLES30.glShaderSource(shader, source);
+            GLES30.glCompileShader(shader);
             int[] compiled = new int[1];
-            GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compiled, 0);
+            GLES30.glGetShaderiv(shader, GLES30.GL_COMPILE_STATUS, compiled, 0);
             if (compiled[0] == 0) {
-                Log.e(TAG, "Could not compile shader " + shaderType + ":");
-                Log.e(TAG, GLES20.glGetShaderInfoLog(shader));
-                GLES20.glDeleteShader(shader);
+                Log.e(TAG, "Could not compile shader " + shaderType + ":\n" + source);
+                Log.e(TAG, GLES30.glGetShaderInfoLog(shader));
+                GLES30.glDeleteShader(shader);
                 shader = 0;
             }
         }
@@ -403,7 +300,7 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
      * just after making it:
      *
      * <pre>
-     * mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor");
+     * mColorHandle = GLES30.glGetUniformLocation(mProgram, "vColor");
      * MyGLRenderer.checkGlError("glGetUniformLocation");</pre>
      *
      * If the operation is not successful, the check throws an error.
@@ -412,9 +309,10 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
      */
     public static void checkGlError(String glOperation) {
         int error;
-        while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
+        while ((error = GLES30.glGetError()) != GLES30.GL_NO_ERROR) {
+
             Log.e(TAG, glOperation + ": glError " + error);
-            throw new RuntimeException(glOperation + ": glError " + error);
+            //throw new RuntimeException(glOperation + ": glError " + error);
         }
     }
     

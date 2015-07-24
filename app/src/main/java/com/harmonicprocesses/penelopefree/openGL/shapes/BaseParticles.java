@@ -16,9 +16,9 @@ public class BaseParticles {
 	private final String vertexShaderCode =
 	    // This matrix member variable provides a hook to manipulate
         // the coordinates of the objects that use this vertex shader
+        "#version 300 es\n" +
         "uniform mat4 uMVPMatrix;" +
-
-        "attribute vec4 vPosition;" +
+        "in vec4 vPosition;" +
         "void main() {" +
         // the matrix must be included as a modifier of gl_Position
         "  gl_Position = vPosition * uMVPMatrix;" +
@@ -26,10 +26,12 @@ public class BaseParticles {
         "}";
 
     private final String fragmentShaderCode =
+        "#version 300 es\n" +
         "precision mediump float;" +
         "uniform vec4 vColor;" +
+        "out vec4 my_FragColor;" +
         "void main() {" +
-        "  gl_FragColor = vColor;" +
+        "  my_FragColor = vColor;" +
         "}";
 
     private final FloatBuffer vertexBuffer;

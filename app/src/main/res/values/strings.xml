@@ -74,6 +74,8 @@
 	<string name="number_of_particles_summary">How many particles included in simulation</string>
 	<string name="number_of_particles_dialog">Number of particles.</string>
 	<string name="number_of_particles_text">particles</string>
+
+    <string name="particles_controls_dialog">Particles Number, Size, and Opacity Controls</string>
 	
 	<string name="wet_dry_ratio">Ratio Wet:Dry</string>
 	<string name="wet_dry_ratio_summary">Ratio of wet to dry.</string>

@@ -112,6 +112,7 @@
     <string name="output_default">System Default(Playback Speaker)</string>
     <string name="output_device">Output Device</string>
     <string name="particle_diffusion">Type of Particles</string>
+    <string name="particles_controls_dialog">Particles Number, Size, and Opacity Controls</string>
     <string name="particles_dialog_button">Close</string>
     <string name="performance_options_category">Performance Options</string>
     <string name="premium_effects">Premium Effects</string>

@@ -82,7 +82,7 @@ public class JuliaDream {
 	}
 
 	public void DrawDisplayFrame(float[] mMVPMatrix, float[] mSTMatrix) {
-		surafaceChanged(rain.width, rain.height);
+		surfaceChanged(rain.width, rain.height);
 		
 		//Return display buffer 0
     	GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
@@ -288,7 +288,7 @@ public class JuliaDream {
 		}
 	}
 	
-	public void surafaceChanged(int w, int h){
+	public void surfaceChanged(int w, int h){
     	float ratio = (float) w / (float) h;  
     	if(mRatio==ratio)return;
     	mRatio = ratio;

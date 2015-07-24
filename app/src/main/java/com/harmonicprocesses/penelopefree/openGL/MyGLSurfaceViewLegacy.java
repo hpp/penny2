@@ -8,11 +8,10 @@ import javax.microedition.khronos.egl.EGLSurface;
 
 import com.harmonicprocesses.penelopefree.audio.AudioConstants;
 import com.harmonicprocesses.penelopefree.audio.DSPEngine;
-import com.hpp.openGL.SurfaceTextureManager;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
+import android.opengl.EGL14;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLSurfaceView.EGLContextFactory;
 import android.opengl.GLSurfaceView.EGLWindowSurfaceFactory;
@@ -46,10 +45,11 @@ public class MyGLSurfaceViewLegacy extends MyGLSurfaceView {
         NoteSpectrum = DSPEngine.staticCalcNoteBins(AudioConstants.defaultBufferSize*2, 
         		AudioConstants.sampleRate);
         // Create an OpenGL ES 2.0 context.
-        setEGLContextClientVersion(2);
+        setEGLContextClientVersion(3);
         // Set the Renderer for drawing on the GLSurfaceView
         mRenderer = new MyGLRenderer(context,this);
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+        setEGLConfigChooser(new MyEGLConfigChooser());
+        //setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         mContextFactory = new MyContextFactory();
         setEGLContextFactory(mContextFactory);
         //mEGLWindowSurfaceFactory = new MyEGLWindowSurfaceFactory();
@@ -162,19 +162,34 @@ public class MyGLSurfaceViewLegacy extends MyGLSurfaceView {
     	
     }
 
+    /**
+     * Requests a render from the audio proc thread. Which is high frequency
+     * If a SurfactTexture Manager exists it pushes request on that object
+     * else uses the normal openGL renderer. If set to draw a camera frame
+     * defaults to the camera frame ready event to request a render.
+     */
 	private void sendRequestRender() {
 
-		if (!capturingVideo && mST != null){
+		if (!drawCameraFrame && mST != null){
 			//
             synchronized (mST.mFrameSyncObject){
                 mST.mFrameAvailable = true;
                 mST.mFrameSyncObject.notifyAll();
             }
 
-		} else if (!capturingVideo){
+		} else if (!drawCameraFrame){
             requestRender();
         }
 	}
+
+    @Override
+    public void updateParticles(int numberParticles,
+                                float sizeParticles,
+                                float opacityParticles) {
+        mRenderer.numParticles = numberParticles;
+        mRenderer.particleSize = sizeParticles;
+        mRenderer.particleOpacity = opacityParticles;
+    }
     		
 	public int updateAmplitudes(float[] amplitudes) throws Exception{
 		mRenderer.mAmplitude = amplitudes;
@@ -227,12 +242,36 @@ public class MyGLSurfaceViewLegacy extends MyGLSurfaceView {
 	public void makeCurrent(){
 		mContextFactory.makeCurrent(mEGLWindowSurfaceFactory.getSurface());
 	}
-	
-	@Override
+
+
+
+    @Override
 	public EGLContext getEGLContext(){
 		return mContextFactory.getContext();
 	}
-    
+
+    private class MyEGLConfigChooser implements EGLConfigChooser {
+        int[] configsAttribs = {
+            EGL14.EGL_RED_SIZE, 8,
+                    EGL14.EGL_GREEN_SIZE, 8,
+                    EGL14.EGL_BLUE_SIZE, 8,
+                    EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
+                    EGL14.EGL_NATIVE_RENDERABLE, EGL14.EGL_TRUE,
+                    EGL14.EGL_NONE
+        };
+
+        @Override
+        public EGLConfig chooseConfig(EGL10 egl, EGLDisplay display) {
+            // Configure EGL for recording and OpenGL ES 2.0.
+            EGLConfig[] configs = new EGLConfig[1];
+            int[] numConfigs = new int[1];
+
+            egl.eglChooseConfig(display, configsAttribs, configs, configs.length,
+                    numConfigs);
+
+            return configs[0];
+        }
+    }
 }
 
 class MyContextFactory implements EGLContextFactory {
@@ -245,7 +284,7 @@ class MyContextFactory implements EGLContextFactory {
 	@Override
 	public EGLContext createContext(EGL10 egl, EGLDisplay display,
 			EGLConfig eglConfig) {
-		int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 2,
+		int[] attrib_list = {EGL_CONTEXT_CLIENT_VERSION, 3,
                 EGL10.EGL_NONE };
 		mEGL = egl;
 		mEGLContext = egl.eglGetCurrentContext();

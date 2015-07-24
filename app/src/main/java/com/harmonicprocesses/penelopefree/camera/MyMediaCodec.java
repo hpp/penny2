@@ -7,6 +7,7 @@ import com.harmonicprocesses.penelopefree.audio.AudioConstants;
 import com.harmonicprocesses.penelopefree.audio.AudioThru.AudioPacket;
 import com.harmonicprocesses.penelopefree.camera.BufferEvent.AudioBufferListener;
 import android.annotation.TargetApi;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.media.CamcorderProfile;
@@ -84,6 +85,11 @@ public class MyMediaCodec{
 			profile = CamcorderProfile.get(mCamId,CamcorderProfile.QUALITY_HIGH);
 			mWidth = profile.videoFrameWidth;
 			mHeight = profile.videoFrameHeight;
+            if ((float)mHeight/(float)mWidth<1&&codecManager.orientation== Configuration.ORIENTATION_PORTRAIT){
+                int temp = mHeight;
+                mHeight = mWidth;
+                mWidth = temp;
+            }
 			mBitRate = profile.videoBitRate;
 			mFrameRate = profile.videoFrameRate;
 			Log.d(TAG, "Camera profile: Frame Rate = " + mFrameRate +
@@ -100,13 +106,8 @@ public class MyMediaCodec{
 			mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
 			//surface = (Surface) mGLView.getHolder();
 			codec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+			videoCodecInputSurface = codec.createInputSurface();
 
-			if (CaptureManager.useStaticBitmap) {
-				videoCodecInputSurface = codec.createInputSurface();
-				
-			}
-
-			//videoCodecInputSurface = cm.mGLView.grabEGLSurface(videoInputSurface);
 		}
 		
 		codec.start();
@@ -117,17 +118,7 @@ public class MyMediaCodec{
 		
 		
 	}
-	
-	/*Put this in all places that need to post data to the codec 
-		 
-	public interface OnBufferListener {
-		public boolean OnBufferReady(ByteBuffer[] newBuff);
-	}
-	
-	public interface OnBufferReadyListener {
-		public boolean OnBufferReady(ByteBuffer inBuff,boolean isAudio,BufferInfo buffInfo);
-	}
-	*/
+
 	
 	public interface OnBufferReadyListener {
 		public boolean OnBufferReady(ByteBuffer inBuff,boolean isAudio,BufferInfo buffInfo);
@@ -233,30 +224,6 @@ public class MyMediaCodec{
 		codecManager.stopMuxer(isAudioCodec);
 	}
 	
-	//*
-	public boolean updateInputSurfaceBitmap(Bitmap bitmap){
-		try {
-			//Canvas k = videoInputSurface.lockCanvas(null);
-			//k.setBitmap(bitmap);
-			//videoInputSurface.unlockCanvasAndPost(k);
-			generateSurfaceFrame(frameIdx);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		
-		//videoCodecInputSurface.makeCurrent();
-		long presentationTime = computePresentationTimeNsec(frameIdx++); 
-		//videoCodecInputSurface.setPresentationTime(presentationTime);
-		
-		runQue(false);
-		return true;
-	}//*/
-	
-	public void updateInputSurfaceByteArray(ByteBuffer drawingBuffer, int size,
-			boolean b) {
-		//sendInByteBuffer(drawingBuffer,size,b);
-	}
-	
 	
 	public void sendInByteBuffer(AudioPacket audioPacket,int size, boolean eos) {
 		if (codecPrimed) {
@@ -345,32 +312,6 @@ public class MyMediaCodec{
 	
 	public void updateFrame(boolean eos) {
 		if (eos) codec.signalEndOfInputStream();
-		runQue(eos);
-	}
-	
-	public void updateFrameFromBitmap(Bitmap splashImage, boolean eos) {
-		if (eos){
-			codec.signalEndOfInputStream();
-		} else {
-			/*
-			nextTime();
-			GLES20.glFinish();
-			codecManager.mGLView.setPresentationToSurface(frameTime);
-			//BitmapDecoder.postBitmaptoSurface(splashImage,videoCodecInputSurface);
-			HandlerThread awaitNewImageThread = new HandlerThread("awaitNewImage");
-			awaitNewImageThread.start();
-			new Handler(awaitNewImageThread.getLooper()).post(new Runnable(){
-				@Override
-				public void run() {
-					codecManager.mPcamera.mStManager.awaitNewImage();
-				}
-			});
-			codecManager.mPcamera.mStManager.drawImage();
-			codecManager.mGLView.swapCodecInputSurfaceBuffer();
-			//GLES20.glFlush();
-			 
-			 */
-		}
 		runQue(eos);
 	}
 	

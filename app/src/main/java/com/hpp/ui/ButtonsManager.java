@@ -80,7 +80,7 @@ public class ButtonsManager {
                 mPrefsEditor.putBoolean("turn_on_output_audio_key", audioOn);
                 mPrefsEditor.commit();
             } else if (button == avButton) {
-                Boolean videoOn = mMainActivity.toggleRecordMode();
+                Boolean videoOn = mMainActivity.toggleCameraMode();
                 setAVButton(videoOn);
                 mPrefsEditor.putBoolean("turn_on_video_preview_key", videoOn);
                 mPrefsEditor.commit();
@@ -137,14 +137,16 @@ public class ButtonsManager {
     }
 
     private Dialog showParticlesDialog(){
-        int numParticles = mSharedPrefs.getInt("vis_number_of_particles_key", 8000);
+        final int numParticles = mSharedPrefs.getInt("vis_number_of_particles_key", 8000);
+        final float sizeParticles = mSharedPrefs.getFloat("size_of_particles_key", 1.0f);
+        final float opacityParticles = mSharedPrefs.getFloat("opacity_of_particles_key", 1.0f);
 
         LayoutInflater inflater = (LayoutInflater)mMainActivity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View layout = inflater.inflate(R.layout.particles_dialog, (ViewGroup)mMainActivity.findViewById(R.id.particles_dialog_root_element));
         AlertDialog.Builder builder = new AlertDialog.Builder(mMainActivity)
                 .setView(layout)
-                .setTitle(R.string.number_of_particles)
-                .setMessage(String.valueOf(numParticles))
+                .setTitle(R.string.particles_controls_dialog)
+                .setMessage(numParticles + ", " + sizeParticles + "' " + 100.f * opacityParticles)
                 .setCancelable(false)
                 .setPositiveButton(R.string.dialog_button_ok, new DialogInterface.OnClickListener() {
                     @Override
@@ -162,15 +164,38 @@ public class ButtonsManager {
 
         particlesDialog.show();
 
-        SeekBar particlesSeekBar = (SeekBar) layout.findViewById(R.id.particles_dialog_seekbar);
+        final SeekBar numberParticlesSeekBar = (SeekBar) layout.findViewById(R.id.number_particles_seekbar);
+        final SeekBar sizeParticlesSeekBar = (SeekBar) layout.findViewById(R.id.size_particles_seekbar);
+        final SeekBar opacityParticlesSeekBar = (SeekBar) layout.findViewById(R.id.opacity_particles_seekbar);
 
-        particlesSeekBar.setProgress(numParticles);
-        particlesSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+        numberParticlesSeekBar.setProgress(numParticles);
+        sizeParticlesSeekBar.setProgress((int)sizeParticles);
+        opacityParticlesSeekBar.setProgress((int)(opacityParticles*100.0f));
+
+        SeekBar.OnSeekBarChangeListener particleSeekBarsChangeListener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                particlesDialog.setMessage(String.valueOf(progress));
-                mPrefsEditor.putInt("vis_number_of_particles_key", progress);
-                mPrefsEditor.commit();
+                if (seekBar == numberParticlesSeekBar) {
+                    particlesDialog.setMessage(progress +
+                            ", " + sizeParticles +
+                            ", " + opacityParticles);
+                    mPrefsEditor.putInt("vis_number_of_particles_key", progress);
+                    mPrefsEditor.commit();
+                } else if (seekBar == sizeParticlesSeekBar) {
+                    particlesDialog.setMessage(numParticles +
+                            ", " + progress +
+                            ", " + opacityParticles);
+                    mPrefsEditor.putFloat("size_of_particles_key", (float) progress);
+                    mPrefsEditor.commit();
+                } else if (seekBar == opacityParticlesSeekBar) {
+                    particlesDialog.setMessage(numParticles +
+                            ", " + sizeParticles +
+                            ", " + progress);
+                    mPrefsEditor.putFloat("opacity_of_particles_key", (float) progress / 100.0f);
+                    mPrefsEditor.commit();
+                }
+
 
                 // TODO make particle # interactive
             }
@@ -184,10 +209,16 @@ public class ButtonsManager {
             public void onStopTrackingTouch(SeekBar seekBar) {
 
             }
-        });
+        };
+
+        numberParticlesSeekBar.setOnSeekBarChangeListener(particleSeekBarsChangeListener);
+        sizeParticlesSeekBar.setOnSeekBarChangeListener(particleSeekBarsChangeListener);
+        opacityParticlesSeekBar.setOnSeekBarChangeListener(particleSeekBarsChangeListener);
 
         return particlesDialog;
     }
+
+
 
 
 }

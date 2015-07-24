@@ -9,10 +9,24 @@
     >
 
     <SeekBar
-        android:id="@+id/particles_dialog_seekbar"
+        android:id="@+id/number_particles_seekbar"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:max="100000"
+        >
+    </SeekBar>
+    <SeekBar
+        android:id="@+id/size_particles_seekbar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:max="10"
+        >
+    </SeekBar>
+    <SeekBar
+        android:id="@+id/opacity_particles_seekbar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
         >
     </SeekBar>
 

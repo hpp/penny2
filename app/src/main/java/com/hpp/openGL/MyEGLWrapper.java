@@ -31,6 +31,8 @@ import android.view.View.OnTouchListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import javax.microedition.khronos.opengles.GL10;
+
 @TargetApi(18)
 public class MyEGLWrapper {
 
@@ -46,6 +48,8 @@ public class MyEGLWrapper {
     public TextView note_display;
 
 	private MyGLSurfaceView mView;
+    boolean screenSurfaceCurrent = false;
+    private int eglError;
 
 	public MyEGLWrapper(Context context, MyGLSurfaceView view) {
 		
@@ -127,7 +131,7 @@ public class MyEGLWrapper {
     private EGLSurface mEGLRecordSurface = EGL14.EGL_NO_SURFACE;
     private static final int EGL_RECORDABLE_ANDROID = 0x3142;
 
-	private static final String TAG = "io.hpp.MyGLSurfaceView18";
+	private static final String TAG = "MyEGLWrapper";
     private Surface mSurface;
     private EGLConfig[] configs;
     private int[] version, configsAttribs = {
@@ -136,9 +140,10 @@ public class MyEGLWrapper {
             EGL14.EGL_BLUE_SIZE, 8,
             EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
             EGL_RECORDABLE_ANDROID, 1,
+            EGL14.EGL_NATIVE_RENDERABLE, EGL14.EGL_TRUE,
             EGL14.EGL_NONE
     }, numConfigs, contextAttribs = {
-            EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+            EGL14.EGL_CONTEXT_CLIENT_VERSION, 3,
             EGL14.EGL_NONE
     }, surfaceAttribs = {
             EGL14.EGL_NONE
@@ -157,11 +162,11 @@ public class MyEGLWrapper {
     	//mView.beginCapture();
         mEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
-            throw new RuntimeException("unable to get EGL14 display");
+            Log.d(TAG,"unable to get EGL14 display");
         }
         version  = new int[2];
         if (!EGL14.eglInitialize(mEGLDisplay, version, 0, version, 1)) {
-            throw new RuntimeException("unable to initialize EGL14");
+            Log.d(TAG,"unable to initialize EGL14");
         }
 
         //*
@@ -250,7 +255,8 @@ public class MyEGLWrapper {
      */
     public void makeCurrent(boolean toScreen, Surface surface) {
     	if (toScreen) { //as opposed to toEncoder
-    		makeScreenSurfaceCurrent();
+            //if (!screenSurfaceCurrent)
+    		    makeScreenSurfaceCurrent();
     		return;
     	} 
     	if (mEGLSurface.equals(EGL14.EGL_NO_SURFACE)){
@@ -270,10 +276,16 @@ public class MyEGLWrapper {
         mEGLSurface = EGL14.EGL_NO_SURFACE;
     }
 
-	private void makeScreenSurfaceCurrent() {
+	private boolean makeScreenSurfaceCurrent() {
     	EGL14.eglMakeCurrent(mScreenEglDisplay, mScreenEglDrawSurface, 
     			mScreenEglReadSurface, mScreenEglContext);
-    	checkEglError("eglMakeCurrent");
+    	if (checkEglError("eglMakeCurrent"))
+            screenSurfaceCurrent = true;
+        else if (eglError==EGL14.EGL_BAD_SURFACE) {
+            mScreenEglDisplay = EGL14.eglGetCurrentDisplay();
+            return false;
+        }
+        return true;
 	}
 
 	private void makeCodecSurfaceCurrent(Surface surface) {
@@ -436,12 +448,14 @@ public class MyEGLWrapper {
      * Checks for EGL errors.  Throws an exception if one is found.
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-	private void checkEglError(String msg) {
-        int error;
-        if ((error = EGL14.eglGetError()) != EGL14.EGL_SUCCESS) {
-            Log.d(TAG,msg + ": EGL error: 0x" + Integer.toHexString(error));
+	private boolean checkEglError(String msg) {
+
+        if ((eglError = EGL14.eglGetError()) != EGL14.EGL_SUCCESS) {
+            Log.d(TAG,msg + ": EGL error: 0x" + Integer.toHexString(eglError));
             new Exception().printStackTrace();
+            return false;
         }
+        return true;
     }
 
 	public MyGLSurfaceView getView() {

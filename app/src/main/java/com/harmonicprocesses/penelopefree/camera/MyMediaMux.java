@@ -45,7 +45,7 @@ public class MyMediaMux {
 		
 		if (videoCodec!=null){
 			//videoTrackIndex = muxer.addTrack(videoFormat);
-			muxerStarted = false; //TODO if only audio start right away
+			muxerStarted = false;
 		}
 		
 		bufferObserver = observer;

@@ -14,7 +14,7 @@ public class AudioConstants {
 	public static int defaultBufferSize = 512;
 	public float wetDry = 0.5f;
 	
-	public final static double AMPLITUDE_THRESHOLD = 0.001; //used in audio processing 
+	public final static double AMPLITUDE_THRESHOLD = 0.01; //used in audio processing
 	public final static double[] //quarterFilterACoeffs = {1,-1.79378,0.813395},
 			 //quarterFilterBCoeffs= {0.0191969,-0.0187761,0.0191969};
 			/*quarterFilterACoeffs = {0.0000002210785372811109,  

@@ -30,7 +30,7 @@ public class SurfaceTextureManager
      */
     public SurfaceTextureManager(Size size, String fragShader) {
         mTextureRender = new STextureRender(fragShader);
-        mTextureRender.surafaceChanged(size.width, size.height);
+        mTextureRender.setSurfaceDimensions(size.width, size.height);
         mTextureRender.surfaceCreated();
         
 
@@ -54,7 +54,7 @@ public class SurfaceTextureManager
     public void release() {
         // this causes a bunch of warnings that appear harmless but might confuse someone:
         //  W BufferQueue: [unnamed-3997-2] cancelBuffer: BufferQueue has been abandoned!
-        //mSurfaceTexture.release();
+        mSurfaceTexture.release();
 
         mTextureRender = null;
         mSurfaceTexture = null;
@@ -89,11 +89,11 @@ public class SurfaceTextureManager
                     mFrameSyncObject.wait(TIMEOUT_MS);
                     if (!mFrameAvailable) {
                         // TODO: if "spurious wakeup", continue while loop
-                        throw new RuntimeException("Camera frame wait timed out" + System.currentTimeMillis());
+                        Log.d(TAG,"Camera frame wait timed out" + System.currentTimeMillis());
                     }
                 } catch (InterruptedException ie) {
                     // shouldn't happen
-                    throw new RuntimeException(ie);
+                    Log.d(TAG, "Frame Sync InterruptedException" + ie.getMessage());
                 }
             }
             mFrameAvailable = false;
@@ -127,5 +127,9 @@ public class SurfaceTextureManager
             mFrameAvailable = true;
             mFrameSyncObject.notifyAll();
         }
+    }
+
+    public void updateSurface(int camId, int degreesRotation, int orientation){
+        mTextureRender.surfaceChanged(camId, degreesRotation, orientation);
     }
 }

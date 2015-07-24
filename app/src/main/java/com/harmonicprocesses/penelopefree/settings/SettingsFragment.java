@@ -5,6 +5,7 @@ import com.google.analytics.tracking.android.MapBuilder;
 import com.harmonicprocesses.penelopefree.R;
 import com.harmonicprocesses.penelopefree.audio.AudioProcessor;
 import com.harmonicprocesses.penelopefree.camera.Pcamera;
+import com.harmonicprocesses.penelopefree.openGL.MyGLSurfaceView;
 import com.hpp.billing.PurchaseDialog;
 import com.hpp.billing.PurchaseManager;
 
@@ -39,6 +40,7 @@ public class    SettingsFragment extends PreferenceFragment {
 	private Pcamera mPcam = null;
 	public CheckBoxPreference checkPref;
 	private Bundle constructorArgs = null;
+    private MyGLSurfaceView mGLView = null;
 	
     public SettingsFragment() {
 	}
@@ -199,12 +201,19 @@ public class    SettingsFragment extends PreferenceFragment {
 				}
 			} else if (key.contains("turn_on_accelerometer_key")||key.contains("vis_number_of_particles_key")||
 					key.contains("invert_audio_key")||key.contains("sound_buffer_size_key")) {
+				/*
 				Bundle bundle = new Bundle();
 				bundle.putInt("messageId", R.string.dialog_restart_simulation);
 				bundle.putInt("button1",R.string.dialog_button_ok);
 				UpSaleDialog dialog = new UpSaleDialog();
 				dialog.setArguments(bundle);
 				dialog.show(mFrag,"RestartSimulationDialog");
+				//*/
+                int valueInt = sharedPreferences.getInt(key,6000);
+                float size = sharedPreferences.getFloat("size_of_particles_key",1.0f);
+                float opacity = sharedPreferences.getFloat("opacity_of_particles_key",1.0f);
+                mGLView.updateParticles(valueInt, size, opacity);
+                value = Integer.toString(valueInt);
 			} else if (key.contains("SEFX_pitch_correct")) {
 				int valueInt = sharedPreferences.getInt(key,100);
 				mAudioProc.updatePitchCorrect(valueInt);
@@ -246,6 +255,11 @@ public class    SettingsFragment extends PreferenceFragment {
 		mPcam = pc;
 		return this;
 	}
+
+    public SettingsFragment setMyGLView(MyGLSurfaceView gl){
+        mGLView = gl;
+        return this;
+    }
 	
 }
   

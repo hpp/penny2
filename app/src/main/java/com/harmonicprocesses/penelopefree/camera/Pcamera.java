@@ -1,8 +1,6 @@
 package com.harmonicprocesses.penelopefree.camera;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -12,45 +10,25 @@ import com.harmonicprocesses.penelopefree.audio.AudioThru;
 import com.harmonicprocesses.penelopefree.openGL.MyGLSurfaceView;
 import com.harmonicprocesses.penelopefree.settings.UpSaleDialog;
 import com.hpp.openGL.MyEGLWrapper;
-import com.hpp.openGL.STextureRender;
-import com.hpp.openGL.SurfaceTextureManager;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Fragment;
 import android.app.FragmentManager;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.media.CamcorderProfile;
-import android.media.MediaCodec;
-import android.media.MediaFormat;
 import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.IBinder;
-import android.os.Looper;
-import android.os.Parcel;
-import android.os.RemoteException;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.Toast;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class Pcamera {
@@ -63,32 +41,42 @@ public class Pcamera {
     static int mCamId;
     ViewGroup videoSurfaceViewGroup;
     private FragmentManager mFrag;
-	private CaptureManager captureManager=null;
+	private  CaptureManager captureManager=null;
+    private int rotation, orientation;
     
 	
 	public Pcamera(PenelopeMainActivity context, ImageButton recordButton, ImageButton switchCamera,
-                   MyGLSurfaceView mGLView, AudioThru audioThru, SurfaceView cameraSV) {
+                   MyGLSurfaceView mGLView, AudioThru audioThru, int rot,
+                   int orient) {
 		mContext = context;
 		mFrag = context.getFragmentManager();
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2){
-			captureManager = new CaptureManager(mContext,this,mGLView,audioThru,cameraSV);
+			captureManager = new CaptureManager(mContext,this,mGLView,audioThru,orient);
 			captureButton = recordButton;
 			captureButton.setOnClickListener(CaptureButtonListener);
 		}
         switchCameraButton = switchCamera;
         switchCameraButton.setOnClickListener(SwitchCameraListener);
+
+        rotation = rot;
+        orientation = orient;
 				
 		if (!checkCameraHardware()) {
 			//TODO what if no camera
 		}
 		
-		mCamera = getCameraInstance(mContext.mSharedPrefs.getBoolean("switch_camera_value", true));
+		mCamera = getCameraInstance(mContext.mSharedPrefs.getBoolean("switch_camera_key", true));
 
 		//mCameraPreview = new CameraPreview(mContext, mCamera);
 		//prepareVideoRecorder();
 	}
 
     public void initSurface() {
+
+        if (mCamera == null) {
+            mCamera = getCameraInstance(mContext.mSharedPrefs.getBoolean("switch_camera_key", true));
+        }
+
         captureManager.prepareSurfaceTexture(mCamera);
     }
 	
@@ -118,10 +106,11 @@ public class Pcamera {
 	}
 
 
-
+    /**
+     * Stops camera preview on a none null instance of mCamera
+     */
 	void stopPreview(){
 		if (mCamera!=null)	mCamera.stopPreview();
-
 	}
 
 
@@ -134,16 +123,27 @@ public class Pcamera {
 			Log.e(TAG,"failed to start camera");
 			return false;
 		}
-		//mCameraPreview.set
-        captureManager.startCameraPreview(mCamera);
+        captureManager.startCameraPreview(mCamera,  mCamId, calcRotation(), orientation);
 		return true;
 	}
-	
-	public void stop(FrameLayout vg) {
-		if (captureManager!=null) captureManager.releaseSurfaceTexture();
-		//releaseMediaRecorder();
-		//releaseCamera();
+
+
+    /**
+     * Stops the camera preview
+     */
+    public void stop() {
+  		if (captureManager!=null) captureManager.releaseSurfaceTexture();
+
+		releaseCamera();
 	}
+
+    /**
+     * Stops the camera preview / openGL loop
+     *
+     */
+    public void stopLoop() {
+        captureManager.pause = true;
+    }
 	
 	private boolean checkCameraHardware() {
 	    if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
@@ -246,8 +246,15 @@ public class Pcamera {
 				captureManager.endCapture();
 				//releaseSurfaceTexture(); 
 				captureButton.setImageResource(R.drawable.capture_button);
+
+                // let screen rotate again
+                mContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
 			} else {
-				//start
+
+                // Lock the screen from rotating
+                mContext.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LOCKED);
+
+				//start recording
 				isRecording = true;
 				/*
 				new Handler(Looper.getMainLooper()).post(
@@ -266,9 +273,13 @@ public class Pcamera {
 		}
 	};
 
+    /**
+     * Switches from front facing to rear camera if device has two cameras
+     */
     OnClickListener SwitchCameraListener = new OnClickListener() {
         @Override
         public void onClick(View v) {
+            // if camera is recording return
             if (isRecording) return;
 
             int oldCamId = mCamId;
@@ -283,7 +294,8 @@ public class Pcamera {
                 editor.putBoolean("switch_camera_key", mCamId==1);
                 editor.commit();
 
-                stop(mContext.mOpenGLViewGroup);
+                stop();
+                prepCam();
                 start();
 
             }
@@ -312,5 +324,19 @@ public class Pcamera {
 		if (captureManager == null) return;
 		captureManager.changeFragmentShader(videoEffect);
 	}
+
+    private int calcRotation(){
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        mCamera.getCameraInfo(mCamId,info);
+        int orientation = rotation * 90;
+        int rotation = 0;
+        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            rotation = (info.orientation - orientation + 360) % 360;
+        } else {  // back-facing camera
+            rotation = (info.orientation - orientation + 540) % 360;
+        }
+        return rotation;
+    }
+
 }
 

@@ -10,11 +10,13 @@ import com.harmonicprocesses.penelopefree.openGL.MyGLSurfaceView;
 import com.harmonicprocesses.penelopefree.openGL.shapes.OuterCircle;
 
 import android.R;
+import android.content.res.Configuration;
 import android.graphics.SurfaceTexture;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.util.Log;
+import android.view.Surface;
 
 /**
  * Code for rendering a texture onto a surface using OpenGL ES 2.0.
@@ -31,7 +33,7 @@ public class STextureRender {
              2.0f, -1.0f, z_0, 0.0f, 0.0f,
             -2.0f,  1.0f, z_0, 1.0f, 1.0f,
              2.0f,  1.0f, z_0, 0.0f, 1.0f,
-    };//*/
+    };
 
     FloatBuffer mTriangleVertices;
 
@@ -45,6 +47,7 @@ public class STextureRender {
             "void main() {\n" +
             "  gl_Position = uMVPMatrix * aPosition;\n" +
             "  vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
+            //"  vTextureCoord = aTextureCoord.xy;\n" +
             "  calcTexCoord = aTextureCoord.xy;\n" +
             "}\n";
 
@@ -259,7 +262,7 @@ public class STextureRender {
     private int maTextureHandle;
 	private float[] mProjMatrix = new float[16];
 	private OuterCircle mOuterCircle;
-	int width;
+	int width, camId, rotation, orientation;
 	int height;
 	float mRatio;
 	private final static String TAG = "com.hpp.STextureRender";
@@ -268,9 +271,11 @@ public class STextureRender {
 
     public STextureRender(String fs) {
     	fragmentShader = fs;
+
         mTriangleVertices = ByteBuffer.allocateDirect(
                 mTriangleVerticesData.length * FLOAT_SIZE_BYTES)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
+
         mTriangleVertices.put(mTriangleVerticesData).position(0);
         //mGLView = glView;
         Matrix.setIdentityM(mSTMatrix, 0);
@@ -278,6 +283,8 @@ public class STextureRender {
         jd.mTriangleVertices = ByteBuffer.allocateDirect(
                 mTriangleVerticesData.length * FLOAT_SIZE_BYTES)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
+
+
     }
 
     public int getTextureId() {
@@ -285,10 +292,11 @@ public class STextureRender {
     }
 
 
-    public void drawFrame(SurfaceTexture st, float[] mMVPMatrix, float[] mProjMatrix) {
+    public void drawFrame(SurfaceTexture st, float[] mMVPMatrix, float[] mPMatrix) {
         checkGlError("onDrawFrame start");
-        st.getTransformMatrix(mSTMatrix);
-            
+        //st.getTransformMatrix(mSTMatrix);
+        mSTMatrix = mProjMatrix;
+
         if (jd.checkActive()){
         	jd.bindFrameBuffer();
         } 
@@ -303,7 +311,7 @@ public class STextureRender {
         	jd.setupDrawFrameBuffer(mProgram);
         }
         /*
-     // Set the camera position (View matrix)
+        // Set the camera position (View matrix)
         Matrix.setLookAtM(mSTMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
 
         // Calculate the projection and view transformation
@@ -388,7 +396,7 @@ public class STextureRender {
 
 	/**
      * Initializes GL state.  Call this after the EGL surface has been created and made current.
-     * @param mNote 
+     *
      */
     public void surfaceCreated() {
         mProgram = createProgram(VERTEX_SHADER, fragmentShader);
@@ -443,40 +451,64 @@ public class STextureRender {
             jd.setupJuliaDisplayProgram();
         }
     }
-    
-    
-    public void surafaceChanged(int w, int h){
-    	float ratio = (float) w / (float) h;  
-    	if(mRatio==ratio)return;
-    	width = w;
-    	height = h;
-    	mRatio = ratio;
-    		
-        // Adjust the viewport based on geometry changes,
-    	if (ratio>1) { //Landscape
-        	float[] landscapeVerts = {
+
+    //
+    public void setSurfaceDimensions(int w, int h){
+        width = w;
+        height = h;
+        mRatio = ((float)height)/((float)width);
+    }
+
+
+    /**
+     * Set the demensions correctly for the camera to map to the texture surface
+     * @param cam the camera id, 0 for rear, 1 for front (face) cam
+     * @param deg number of degrees to rotate device. Calculated in Pcam
+     * @param orient Configuration.ORIENTATION_LANDSCAPE or portrait.
+     */
+    public void surfaceChanged(Integer cam, Integer deg, Integer orient){
+
+
+        if(cam == camId & deg==rotation & orient==orientation)return;
+        if (cam != null) camId = cam;
+        if (deg != null) rotation = deg;
+        if (orient!=null) orientation = orient;
+
+        mTriangleVertices.position(0);
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            if (mRatio<1) mRatio = 1.0f/mRatio;
+            float[] landscapeVerts = {
                     // X, Y, Z, U, V
-                    -ratio, -1.0f, z_0, 1.0f, 0.0f,
-                    ratio, -1.0f, z_0, 0.0f, 0.0f,
-                    -ratio,  1.0f, z_0, 1.0f, 1.0f,
-                    ratio,  1.0f, z_0, 0.0f, 1.0f,
+                    -mRatio, -1.0f, z_0, 1.0f, 0.0f,
+                    mRatio, -1.0f, z_0, 0.0f, 0.0f,
+                    -mRatio, 1.0f, z_0, 1.0f, 1.0f,
+                    mRatio, 1.0f, z_0, 0.0f, 1.0f,
             };
-        	mTriangleVertices.put(landscapeVerts).position(0);
-    	} else { //Portrait
-    		float[] portraitVerts = {
+            mTriangleVertices.put(landscapeVerts).position(0);
+        } else {
+            if (mRatio>1) mRatio = 1.0f/mRatio;
+            float[] portraitVerts = {
                     // X, Y, Z, U, V
-                    -ratio, -1.0f, z_0, 1.0f, 1.0f,
-                    ratio, -1.0f, z_0, 1.0f, 0.0f,
-                    -ratio,  1.0f, z_0, 0.0f, 1.0f,
-                    ratio,  1.0f, z_0, 0.0f, 0.0f,
+                    -mRatio, -1.0f, z_0, 1.0f, 0.0f,
+                    mRatio, -1.0f, z_0, 0.0f, 0.0f,
+                    -mRatio, 1.0f, z_0, 1.0f, 1.0f,
+                    mRatio, 1.0f, z_0, 0.0f, 1.0f,
             };
-    		mTriangleVertices.put(portraitVerts).position(0);
-    	}
-    	 
+            mTriangleVertices.put(portraitVerts).position(0);
+        }
 
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+        //Matrix.setIdentityM();
+        float[] identityMatrix = new float[16];
+        Matrix.setIdentityM(identityMatrix, 0); //start with identity matrix
+        Matrix.translateM(mProjMatrix,0,identityMatrix, 0, 0.5f,0.5f,0.0f); // move back to [0 1] range
+        if (camId == 0) Matrix.scaleM(mProjMatrix,0,-1.0f, 1.0f, 1.0f); //
+        Matrix.rotateM(identityMatrix, 0, mProjMatrix, 0, rotation, 0.0f,0.0f,1.0f); // rotate about z axis
+        Matrix.translateM(mProjMatrix,0, identityMatrix, 0, -0.5f,-0.5f,0.0f); // move center to center [0 1] : [-.5 .5]
+
+        //Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
     }
 
     
@@ -507,7 +539,7 @@ public class STextureRender {
 
     private int loadShader(int shaderType, String source) {
         int shader = GLES20.glCreateShader(shaderType);
-        checkGlError("glCreateShader type=" + shaderType);
+        checkGlError("glCreateShader type=" + shaderType + ": \n" + source);
         GLES20.glShaderSource(shader, source);
         GLES20.glCompileShader(shader);
         int[] compiled = new int[1];

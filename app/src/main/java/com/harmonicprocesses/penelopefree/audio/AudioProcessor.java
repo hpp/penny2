@@ -74,8 +74,10 @@ public class AudioProcessor extends HandlerThread{
 		mAudioThru.startAudioThru(false, false, 2, 0.5f);
 		mAudioThru.stopAudioThru();
 	}
-	
-	protected static class ReceiveNewSamplesHandler extends Handler {
+
+
+
+    protected static class ReceiveNewSamplesHandler extends Handler {
 		private final WeakReference<AudioProcessor> apReference;
 		private final MessageQueue msgQueue;
 		
@@ -164,6 +166,8 @@ public class AudioProcessor extends HandlerThread{
 	public void updateWetDry(int level){
 		mAudioThru.updateWetDry(level/100.0f);
 	}
+
+
 	
 	
 	/*==========================================================================

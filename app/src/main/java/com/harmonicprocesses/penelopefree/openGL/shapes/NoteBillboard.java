@@ -8,13 +8,15 @@ import java.nio.ShortBuffer;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.opengl.GLES20;
+import android.opengl.GLES30;
 import android.opengl.GLUtils;
+import android.util.Log;
 
 import com.harmonicprocesses.penelopefree.R;
 import com.harmonicprocesses.penelopefree.openGL.MyGLRenderer;
 
 public class NoteBillboard {
+    static final String TAG = "NoteBoard";
 	
 	/** How many bytes per float. */
 	private final int mBytesPerFloat = 4;	
@@ -72,7 +74,10 @@ public class NoteBillboard {
     // Set color with red, green, blue and alpha (opacity) values
     float color[] = { 0.2f, 0.709803922f, 0.898039216f, 1.0f };
 
+
     public NoteBillboard(Context context) {
+
+
     	float[] Coords = {-0.1f, 0.8f, 0.0f,   // top left
     					   -0.1f, 0.6f, 0.0f,   // bottom left
     					    0.1f, 0.6f, 0.0f,   // bottom right
@@ -109,16 +114,16 @@ public class NoteBillboard {
         drawListBuffer.position(0);
 
         // prepare shaders and OpenGL program
-        int vertexShader = MyGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER,
+        int vertexShader = MyGLRenderer.loadShader(GLES30.GL_VERTEX_SHADER,
                                                    vertexShaderCode);
-        int fragmentShader = MyGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER,
+        int fragmentShader = MyGLRenderer.loadShader(GLES30.GL_FRAGMENT_SHADER,
                                                      fragmentShaderCode);
 
-        mProgram = GLES20.glCreateProgram();             // create empty OpenGL Program
-        GLES20.glAttachShader(mProgram, vertexShader);   // add the vertex shader to program
-        GLES20.glAttachShader(mProgram, fragmentShader); // add the fragment shader to program
+        mProgram = GLES30.glCreateProgram();             // create empty OpenGL Program
+        GLES30.glAttachShader(mProgram, vertexShader);   // add the vertex shader to program
+        GLES30.glAttachShader(mProgram, fragmentShader); // add the fragment shader to program
        
-        GLES20.glLinkProgram(mProgram);                  // create OpenGL program executables
+        GLES30.glLinkProgram(mProgram);                  // create OpenGL program executables
 
              
         // Load the texture
@@ -131,7 +136,7 @@ public class NoteBillboard {
     	
         final int[] textureHandles = new int[12];
      
-        GLES20.glGenTextures(12, textureHandles, 0);
+        GLES30.glGenTextures(12, textureHandles, 0);
         
         int[] note = {R.drawable.note1, R.drawable.note2,
         		R.drawable.note3, R.drawable.note4, R.drawable.note5,
@@ -153,14 +158,14 @@ public class NoteBillboard {
 	            final Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resourceId, options);
 	     
 	            // Bind to the texture in OpenGL
-	            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle);
+	            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureHandle);
 	     
 	            // Set filtering
-	            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-	            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+	            GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MIN_FILTER, GLES30.GL_NEAREST);
+	            GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_MAG_FILTER, GLES30.GL_NEAREST);
 	     
 	            // Load the bitmap into the bound texture.
-	            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+	            GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0);
 	     
 	            // Recycle the bitmap, since its data has been loaded into OpenGL.
 	            bitmap.recycle();
@@ -168,7 +173,7 @@ public class NoteBillboard {
 	     
 	        if (textureHandle == 0)
 	        {
-	            throw new RuntimeException("Error loading texture.");
+	            Log.d(TAG, "Error loading texture.");
 	        }
         }
 	     
@@ -177,61 +182,61 @@ public class NoteBillboard {
     
     public void draw(float[] mvpMatrix, int note) {
         // Add program to OpenGL environment
-        GLES20.glUseProgram(mProgram);
+        GLES30.glUseProgram(mProgram);
         MyGLRenderer.checkGlError("glUseProgram");
 
         // get handle to vertex shader's vPosition member
-        mPositionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition");
+        mPositionHandle = GLES30.glGetAttribLocation(mProgram, "vPosition");
 
         // Enable a handle to the triangle vertices
-        GLES20.glEnableVertexAttribArray(mPositionHandle);
+        GLES30.glEnableVertexAttribArray(mPositionHandle);
 
         // Prepare the triangle coordinate data
         //Matrix.multiplyMV(vertexBuffer, 0, scaleMatrix, 0, vertexBuffer, 0);
-        GLES20.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX,
-                                     GLES20.GL_FLOAT, false,
+        GLES30.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX,
+                                     GLES30.GL_FLOAT, false,
                                      vertexStride, vertexBuffer);
         
         // get handle to fragment shader's vColor member
-        //mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor");
+        //mColorHandle = GLES30.glGetUniformLocation(mProgram, "vColor");
 
-        mTextureUniformHandle = GLES20.glGetUniformLocation(mProgram, "u_Texture");
-        mTextureCoordinateHandle = GLES20.glGetAttribLocation(mProgram, "a_TexCoordinate");
+        mTextureUniformHandle = GLES30.glGetUniformLocation(mProgram, "u_Texture");
+        mTextureCoordinateHandle = GLES30.glGetAttribLocation(mProgram, "a_TexCoordinate");
      
         // Set the active texture unit to texture unit 1. (0 reserved for FBO?)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES30.glActiveTexture(GLES30.GL_TEXTURE0);
      
         // Bind the texture to this unit.
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureDataHandles[note]);
+        GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, mTextureDataHandles[note]);
      
         // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
-        GLES20.glUniform1i(mTextureUniformHandle, 0);
+        GLES30.glUniform1i(mTextureUniformHandle, 0);
         
         // Set color for drawing the triangle
-        //GLES20.glUniform4fv(mColorHandle, 1, color, 0);
+        //GLES30.glUniform4fv(mColorHandle, 1, color, 0);
 
         // Pass in the texture coordinate information
         mCubeTextureCoordinates.position(0);
-        GLES20.glVertexAttribPointer(mTextureCoordinateHandle, mTextureCoordinateDataSize, GLES20.GL_FLOAT, false, 
+        GLES30.glVertexAttribPointer(mTextureCoordinateHandle, mTextureCoordinateDataSize, GLES30.GL_FLOAT, false, 
         		0, mCubeTextureCoordinates);
         
-        GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
+        GLES30.glEnableVertexAttribArray(mTextureCoordinateHandle);
         
         
         // get handle to shape's transformation matrix
-        mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
+        mMVPMatrixHandle = GLES30.glGetUniformLocation(mProgram, "uMVPMatrix");
         MyGLRenderer.checkGlError("glGetUniformLocation");
 
         // Apply the projection and view transformation
-        GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0);
+        GLES30.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mvpMatrix, 0);
         MyGLRenderer.checkGlError("glUniformMatrix4fv");
 
         // Draw the square
-        GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.length,
-                              GLES20.GL_UNSIGNED_SHORT, drawListBuffer);
+        GLES30.glDrawElements(GLES30.GL_TRIANGLES, drawOrder.length,
+                              GLES30.GL_UNSIGNED_SHORT, drawListBuffer);
 
         // Disable vertex array
-        GLES20.glDisableVertexAttribArray(mPositionHandle);
+        GLES30.glDisableVertexAttribArray(mPositionHandle);
     }
 }
 

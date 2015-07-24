@@ -67,8 +67,20 @@ public class ScriptC_particleFilter extends ScriptC {
         return mExportVar_vin;
     }
 
+    public Script.FieldID getFieldID_vin() {
+        return createFieldID(mExportVarIdx_vin, null);
+    }
+
     private final static int mExportForEachIdx_root = 0;
+    public Script.KernelID getKernelID_root() {
+        return createKernelID(mExportForEachIdx_root, 3, null, null);
+    }
+
     public void forEach_root(Allocation ain, Allocation aout) {
+        forEach_root(ain, aout, null);
+    }
+
+    public void forEach_root(Allocation ain, Allocation aout, Script.LaunchOptions sc) {
         // check ain
         if (!ain.getType().getElement().isCompatible(__ScriptField_particle)) {
             throw new RSRuntimeException("Type mismatch with ScriptField_particle!");
@@ -89,7 +101,7 @@ public class ScriptC_particleFilter extends ScriptC {
             throw new RSRuntimeException("Dimension mismatch between parameters ain and aout!");
         }
 
-        forEach(mExportForEachIdx_root, ain, aout, null);
+        forEach(mExportForEachIdx_root, ain, aout, null, sc);
     }
 
     private final static int mExportFuncIdx_getNextPosition = 0;

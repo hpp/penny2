@@ -45,7 +45,15 @@ public class ScriptC_mono extends ScriptC {
 
     private Element __U8_4;
     private final static int mExportForEachIdx_root = 0;
+    public Script.KernelID getKernelID_root() {
+        return createKernelID(mExportForEachIdx_root, 3, null, null);
+    }
+
     public void forEach_root(Allocation ain, Allocation aout) {
+        forEach_root(ain, aout, null);
+    }
+
+    public void forEach_root(Allocation ain, Allocation aout, Script.LaunchOptions sc) {
         // check ain
         if (!ain.getType().getElement().isCompatible(__U8_4)) {
             throw new RSRuntimeException("Type mismatch with U8_4!");
@@ -66,7 +74,7 @@ public class ScriptC_mono extends ScriptC {
             throw new RSRuntimeException("Dimension mismatch between parameters ain and aout!");
         }
 
-        forEach(mExportForEachIdx_root, ain, aout, null);
+        forEach(mExportForEachIdx_root, ain, aout, null, sc);
     }
 
 }
