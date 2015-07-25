@@ -8,4 +8,4 @@ audio processing framework.
  textures or lookup tables of nodal or other acoustical areas of interest in 2d or 3d."
  
  
- All rights reserved.
+ Copyright July 21st 2015 by Harmonic Processes Inc. All rights reserved.
